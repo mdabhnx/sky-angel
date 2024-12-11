@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 
+type GameObjectType = "parachute" | "star" | "cloud" | "bird";
+
 interface GameObject {
   id: number;
   x: number;
   y: number;
-  type?: "parachute" | "star" | "cloud" | "bird";
+  type: GameObjectType;
+  width: number;
+  height: number;
 }
 
 const App: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [fuel, setFuel] = useState(10);
+  const [fuel, setFuel] = useState(100);
   const [stars, setStars] = useState(0);
-  const [parachutes, setParachutes] = useState<GameObject[]>([]);
-  const [clouds, setClouds] = useState<GameObject[]>([]);
-  const [birds, setBirds] = useState<GameObject[]>([]);
+  const [gameObjects, setGameObjects] = useState<GameObject[]>([]);
   const [aircraftPosition, setAircraftPosition] = useState({
     top: 500,
     left: 512,
@@ -29,14 +31,11 @@ const App: React.FC = () => {
     setTimer(0);
     setFuel(100);
     setStars(0);
-    setParachutes([]);
-    setClouds([]);
-    setBirds([]);
+    setGameObjects([]);
     setAircraftPosition({ top: 500, left: 512 });
     setIsGameOver(false);
   };
 
-  // Aircraft movement logic
   const handleKeyDown = (e: KeyboardEvent) => {
     if (!aircraftRef.current || !gameContainerRef.current) return;
 
@@ -58,69 +57,114 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isGameStarted && !isGameOver) {
       window.addEventListener("keydown", handleKeyDown);
-
       return () => {
         window.removeEventListener("keydown", handleKeyDown);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGameStarted, isGameOver, aircraftPosition]);
+  }, [isGameStarted, isGameOver]);
 
-  // Generate and move game objects
   useEffect(() => {
     if (isGameStarted && !isGameOver) {
-      // Generate parachutes and stars
-      const parachuteInterval = setInterval(() => {
-        setParachutes((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            x: Math.random() * 974,
-            y: 0,
-            type: Math.random() > 0.5 ? "parachute" : "star",
-          },
-        ]);
-      }, 2000);
+      const spawnInterval = setInterval(() => {
+        const containerHeight = gameContainerRef.current?.clientHeight || 768;
+        const containerWidth = gameContainerRef.current?.clientWidth || 1024;
+        const spawnTypes: GameObjectType[] = [
+          "parachute",
+          "star",
+          "cloud",
+          "bird",
+        ];
+        const spawnType =
+          spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
 
-      // Generate clouds
-      const cloudInterval = setInterval(() => {
-        setClouds((prev) => [
-          ...prev,
-          { id: Date.now(), x: 1024, y: Math.random() * 700, type: "cloud" },
-        ]);
-      }, 3000);
+        const verticalPositions = {
+          cloud: [50, 150, 250],
+          bird: [100, 200, 300],
+        };
 
-      // Generate birds
-      const birdInterval = setInterval(() => {
-        setBirds((prev) => [
-          ...prev,
-          { id: Date.now(), x: 1024, y: Math.random() * 700, type: "bird" },
-        ]);
-      }, 2500);
+        const newObject: GameObject = {
+          id: Date.now(),
+          x: containerWidth,
+          y:
+            spawnType === "cloud" || spawnType === "bird"
+              ? verticalPositions[spawnType][Math.floor(Math.random() * 3)]
+              : spawnType === "parachute"
+              ? -50
+              : Math.random() * (containerHeight / 2),
+          type: spawnType,
+          width: spawnType === "cloud" ? 100 : 30,
+          height: spawnType === "cloud" ? 60 : 30,
+        };
 
-      // Move objects
-      const moveObjects = setInterval(() => {
-        setParachutes((prev) =>
-          prev.map((p) => ({ ...p, y: p.y + 5 })).filter((p) => p.y < 768)
-        );
-        setClouds((prev) =>
-          prev.map((c) => ({ ...c, x: c.x - 2 })).filter((c) => c.x > -100)
-        );
-        setBirds((prev) =>
-          prev.map((b) => ({ ...b, x: b.x - 5 })).filter((b) => b.x > -50)
+        setGameObjects((prev) => [...prev, newObject]);
+      }, 1000);
+
+      const moveInterval = setInterval(() => {
+        setGameObjects((prev) =>
+          prev
+            .map((obj) => ({
+              ...obj,
+              x: obj.x - 5,
+              y: ["parachute", "star"].includes(obj.type) ? obj.y + 5 : obj.y,
+            }))
+            .filter((obj) => obj.x > -50 && obj.y < 768)
         );
       }, 50);
 
       return () => {
-        clearInterval(parachuteInterval);
-        clearInterval(cloudInterval);
-        clearInterval(birdInterval);
-        clearInterval(moveObjects);
+        clearInterval(spawnInterval);
+        clearInterval(moveInterval);
       };
     }
   }, [isGameStarted, isGameOver]);
 
-  // Timer and fuel decrement
+  useEffect(() => {
+    if (isGameStarted && !isGameOver) {
+      const collisionInterval = setInterval(() => {
+        if (!aircraftRef.current) return;
+
+        const aircraft = aircraftRef.current.getBoundingClientRect();
+
+        setGameObjects((prev) =>
+          prev.filter((obj) => {
+            const objElement = document.getElementById(`${obj.type}-${obj.id}`);
+            const objRect = objElement?.getBoundingClientRect();
+
+            if (objRect) {
+              // Check for collision using bounding boxes
+              const colliding =
+                aircraft.left < objRect.left + objRect.width &&
+                aircraft.left + aircraft.width > objRect.left &&
+                aircraft.top < objRect.top + objRect.height &&
+                aircraft.top + aircraft.height > objRect.top;
+              console.log("colliding", colliding);
+
+              if (colliding) {
+                switch (obj.type) {
+                  case "bird":
+                    setIsGameOver(true);
+                    return false;
+                  case "star":
+                    setStars((prevStars) => prevStars + 1);
+                    return false;
+                  case "parachute":
+                    setFuel((prevFuel) => Math.min(100, prevFuel + 10));
+                    return false;
+                  default:
+                    return true;
+                }
+              }
+            }
+            return true;
+          })
+        );
+      }, 10);
+
+      return () => clearInterval(collisionInterval);
+    }
+  }, [isGameStarted, isGameOver, gameObjects]);
+
   useEffect(() => {
     if (isGameStarted && !isGameOver) {
       const timerInterval = setInterval(() => {
@@ -152,38 +196,29 @@ const App: React.FC = () => {
               position: "absolute",
               top: `${aircraftPosition.top}px`,
               left: `${aircraftPosition.left}px`,
+              width: "50px",
+              height: "50px",
+              backgroundColor: "red",
             }}
           />
-          {parachutes.map((item) => (
+          {gameObjects.map((obj) => (
             <div
-              key={item.id}
-              className={item.type}
+              key={obj.id}
+              id={`${obj.type}-${obj.id}`}
+              className={obj.type}
               style={{
                 position: "absolute",
-                top: `${item.y}px`,
-                left: `${item.x}px`,
-              }}
-            />
-          ))}
-          {clouds.map((cloud) => (
-            <div
-              key={cloud.id}
-              className="cloud"
-              style={{
-                position: "absolute",
-                top: `${cloud.y}px`,
-                left: `${cloud.x}px`,
-              }}
-            />
-          ))}
-          {birds.map((bird) => (
-            <div
-              key={bird.id}
-              className="bird"
-              style={{
-                position: "absolute",
-                top: `${bird.y}px`,
-                left: `${bird.x}px`,
+                top: `${obj.y}px`,
+                left: `${obj.x}px`,
+                width: `${obj.width}px`,
+                height: `${obj.height}px`,
+                backgroundColor:
+                  obj.type === "bird"
+                    ? "black"
+                    : obj.type === "star"
+                    ? "yellow"
+                    : "blue",
+                borderRadius: obj.type === "star" ? "50%" : "0",
               }}
             />
           ))}
