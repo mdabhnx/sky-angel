@@ -23,6 +23,7 @@ const App: React.FC = () => {
     left: 512,
   });
   const [isGameOver, setIsGameOver] = useState(false);
+  const [isPaused, setIsPaused] = useState(false); // Track paused state
 
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const aircraftRef = useRef<HTMLDivElement>(null);
@@ -35,10 +36,11 @@ const App: React.FC = () => {
     setGameObjects([]);
     setAircraftPosition({ top: 500, left: 512 });
     setIsGameOver(false);
+    setIsPaused(false); // Ensure game is not paused when starting
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (!aircraftRef.current || !gameContainerRef.current) return;
+    if (!aircraftRef.current || !gameContainerRef.current || isPaused) return; // Don't process keys if paused
 
     const step = 20;
     const container = gameContainerRef.current.getBoundingClientRect();
@@ -55,6 +57,10 @@ const App: React.FC = () => {
     }
   };
 
+  const togglePause = () => {
+    setIsPaused((prev) => !prev); // Toggle pause state
+  };
+
   const handleRetry = () => {
     startGame();
   };
@@ -67,68 +73,74 @@ const App: React.FC = () => {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGameStarted, isGameOver]);
+  }, [isGameStarted, isGameOver, isPaused]);
 
+  // Handle spawn and movement intervals
   useEffect(() => {
+    let spawnInterval: number;
+    let moveInterval: number;
+
     if (isGameStarted && !isGameOver) {
-      const spawnInterval = setInterval(() => {
-        const containerHeight = gameContainerRef.current?.clientHeight || 768;
-        const containerWidth = gameContainerRef.current?.clientWidth || 1024;
-        const spawnTypes: GameObjectType[] = [
-          "parachute",
-          "star",
-          "cloud",
-          "bird",
-        ];
-        const spawnType =
-          spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
-        console.log("spawnType", spawnType);
+      if (!isPaused) {
+        // Spawn objects
+        spawnInterval = setInterval(() => {
+          const containerHeight = gameContainerRef.current?.clientHeight || 768;
+          const containerWidth = gameContainerRef.current?.clientWidth || 1024;
+          const spawnTypes: GameObjectType[] = [
+            "parachute",
+            "star",
+            "cloud",
+            "bird",
+          ];
+          const spawnType =
+            spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
 
-        const verticalPositions = {
-          // Generate random y position for clouds and birds across the entire screen
-          cloud: getRandomNumber(0, containerHeight - 60), // Cloud's height is 60
-          bird: getRandomNumber(0, containerHeight - 40), // Bird's height is 40
-        };
+          const verticalPositions = {
+            cloud: getRandomNumber(0, containerHeight - 60),
+            bird: getRandomNumber(0, containerHeight - 40),
+          };
 
-        const newObject: GameObject = {
-          id: Date.now(),
-          x: containerWidth + 50, // Ensure the object starts from off-screen (right side)
-          y:
-            spawnType === "cloud" || spawnType === "bird"
-              ? verticalPositions[spawnType] // Random vertical position across the entire screen
-              : spawnType === "parachute"
-              ? -50 // Start above the screen for parachutes
-              : Math.random() * (containerHeight / 2), // Random fall for stars
-          type: spawnType,
-          width: spawnType === "cloud" ? 100 : 30,
-          height: spawnType === "cloud" ? 60 : 30,
-        };
+          const newObject: GameObject = {
+            id: Date.now(),
+            x: containerWidth + 50,
+            y:
+              spawnType === "cloud" || spawnType === "bird"
+                ? verticalPositions[spawnType]
+                : spawnType === "parachute"
+                ? -50
+                : Math.random() * (containerHeight / 2),
+            type: spawnType,
+            width: spawnType === "cloud" ? 100 : 30,
+            height: spawnType === "cloud" ? 60 : 30,
+          };
 
-        setGameObjects((prev) => [...prev, newObject]);
-      }, 1000);
+          setGameObjects((prev) => [...prev, newObject]);
+        }, 1000);
 
-      const moveInterval = setInterval(() => {
-        setGameObjects(
-          (prev) =>
+        // Move objects
+        moveInterval = setInterval(() => {
+          setGameObjects((prev) =>
             prev
               .map((obj) => ({
                 ...obj,
-                x: obj.x - 5, // Move left
-                y: ["parachute", "star"].includes(obj.type) ? obj.y + 5 : obj.y, // Add gravity effect to some objects
+                x: obj.x - 5,
+                y: ["parachute", "star"].includes(obj.type) ? obj.y + 5 : obj.y,
               }))
-              .filter((obj) => obj.x > -50 && obj.y < 768) // Remove off-screen objects
-        );
-      }, 50);
+              .filter((obj) => obj.x > -50 && obj.y < 768)
+          );
+        }, 50);
+      }
 
       return () => {
         clearInterval(spawnInterval);
         clearInterval(moveInterval);
       };
     }
-  }, [isGameStarted, isGameOver]);
+  }, [isGameStarted, isGameOver, isPaused]);
 
+  // Handle collisions
   useEffect(() => {
-    if (isGameStarted && !isGameOver) {
+    if (isGameStarted && !isGameOver && !isPaused) {
       const collisionInterval = setInterval(() => {
         if (!aircraftRef.current) return;
 
@@ -140,7 +152,6 @@ const App: React.FC = () => {
             const objRect = objElement?.getBoundingClientRect();
 
             if (objRect) {
-              // Check for collision using bounding boxes
               const colliding =
                 aircraft.left < objRect.left + objRect.width &&
                 aircraft.left + aircraft.width > objRect.left &&
@@ -170,10 +181,11 @@ const App: React.FC = () => {
 
       return () => clearInterval(collisionInterval);
     }
-  }, [isGameStarted, isGameOver, gameObjects]);
+  }, [isGameStarted, isGameOver, gameObjects, isPaused]);
 
+  // Handle timer and fuel depletion
   useEffect(() => {
-    if (isGameStarted && !isGameOver) {
+    if (isGameStarted && !isGameOver && !isPaused) {
       const timerInterval = setInterval(() => {
         setTimer((prev) => prev + 1);
         setFuel((prev) => Math.max(0, prev - 1));
@@ -182,7 +194,7 @@ const App: React.FC = () => {
 
       return () => clearInterval(timerInterval);
     }
-  }, [isGameStarted, isGameOver, fuel]);
+  }, [isGameStarted, isGameOver, fuel, isPaused]);
 
   return (
     <div id="game-container" ref={gameContainerRef}>
@@ -210,21 +222,25 @@ const App: React.FC = () => {
               height: "50px",
             }}
           />
-          {gameObjects.map((obj) => (
-            <div
-              key={obj.id}
-              id={`${obj.type}-${obj.id}`}
-              className={obj.type}
-              style={{
-                position: "absolute",
-                top: `${obj.y}px`,
-                left: `${obj.x}px`,
-                width: `${obj.width}px`,
-                height: `${obj.height}px`,
-                // borderRadius: obj.type === "star" ? "50%" : "0",
-              }}
-            />
-          ))}
+          {gameObjects.map((obj) => {
+            return (
+              <div
+                key={obj.id}
+                id={`${obj.type}-${obj.id}`}
+                className={obj.type}
+                style={{
+                  position: "absolute",
+                  top: `${obj.y}px`,
+                  left: `${obj.x}px`,
+                  width: `${obj.width}px`,
+                  height: `${obj.height}px`,
+                }}
+              />
+            );
+          })}
+          <button onClick={togglePause} className="pause-game">
+            {isPaused ? "Resume" : "Pause"}
+          </button>
         </>
       )}
 

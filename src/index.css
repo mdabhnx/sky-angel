@@ -15,7 +15,6 @@ body {
   overflow: hidden;
 }
 
-/* Flexbox container to center the button */
 .game-wrapper {
   display: flex;
   justify-content: center;
@@ -107,7 +106,6 @@ button:disabled {
   width: 30px;
   height: 30px;
   background: url("/parachute.png") no-repeat center/contain;
-  animation: fallParachute 3s linear infinite;
 }
 
 @keyframes fallParachute {
@@ -119,14 +117,12 @@ button:disabled {
   }
 }
 
-/* Stars */
 .star {
   position: absolute;
   top: -50px;
   width: 30px;
   height: 30px;
   background: url("/star.png") no-repeat center/contain;
-  animation: fallStar 3s linear infinite;
 }
 
 @keyframes fallStar {
@@ -237,4 +233,19 @@ button:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.pause-game {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background-color 0.3s ease;
 }
