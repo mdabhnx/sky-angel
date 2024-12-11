@@ -1,0 +1,130 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #87ceeb;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+#game-container {
+  width: 1024px;
+  height: 768px;
+  background: white;
+  border: 2px solid #000;
+  position: relative;
+  overflow: hidden;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 18px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+#aircraft {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  background: url("/aircraft.png") no-repeat center/contain;
+}
+
+.cloud {
+  position: absolute;
+  top: 10%;
+  right: -100px;
+  width: 100px;
+  height: 60px;
+  background: url("/cloud.png") no-repeat center/contain;
+  animation: moveClouds 10s linear infinite;
+}
+
+@keyframes moveClouds {
+  from {
+    right: -100px;
+  }
+  to {
+    right: 1024px;
+  }
+}
+
+.bird {
+  position: absolute;
+  top: 20%;
+  width: 40px;
+  height: 40px;
+  background: url("/bird.png") no-repeat center/contain;
+  transform: rotate(180deg);
+  animation: moveBirds 5s linear infinite;
+}
+
+@keyframes moveBirds {
+  from {
+    right: -50px;
+  }
+  to {
+    right: 1024px;
+  }
+}
+
+.parachute {
+  position: absolute;
+  top: -50px;
+  width: 30px;
+  height: 30px;
+  background: url("/parachute.png") no-repeat center/contain;
+  animation: fallParachute 3s linear infinite;
+}
+
+@keyframes fallParachute {
+  from {
+    top: -50px;
+  }
+  to {
+    top: 768px;
+  }
+}
+
+.star {
+  position: absolute;
+  top: -50px;
+  width: 30px;
+  height: 30px;
+  background: url("/star.png") no-repeat center/contain;
+  animation: fallStar 3s linear infinite;
+}
+
+@keyframes fallStar {
+  from {
+    top: -50px;
+  }
+  to {
+    top: 768px;
+  }
+}
+
+#hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 20px;
+  color: black;
+}
