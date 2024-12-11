@@ -198,7 +198,6 @@ const App: React.FC = () => {
               left: `${aircraftPosition.left}px`,
               width: "50px",
               height: "50px",
-              backgroundColor: "red",
             }}
           />
           {gameObjects.map((obj) => (
@@ -212,12 +211,6 @@ const App: React.FC = () => {
                 left: `${obj.x}px`,
                 width: `${obj.width}px`,
                 height: `${obj.height}px`,
-                backgroundColor:
-                  obj.type === "bird"
-                    ? "black"
-                    : obj.type === "star"
-                    ? "yellow"
-                    : "blue",
                 borderRadius: obj.type === "star" ? "50%" : "0",
               }}
             />
