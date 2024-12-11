@@ -12,6 +12,12 @@ interface GameObject {
   height: number;
 }
 
+interface Ranking {
+  id: string;
+  name: string;
+  time: string;
+  stars: number;
+}
 const App: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -24,6 +30,8 @@ const App: React.FC = () => {
   });
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false); // Track paused state
+  const [userName, setUserName] = useState("");
+  const [ranking, setRanking] = useState<Ranking[]>([]);
 
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const aircraftRef = useRef<HTMLDivElement>(null);
@@ -40,7 +48,7 @@ const App: React.FC = () => {
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (!aircraftRef.current || !gameContainerRef.current || isPaused) return; // Don't process keys if paused
+    if (!aircraftRef.current || !gameContainerRef.current || isPaused) return;
 
     const step = 20;
     const container = gameContainerRef.current.getBoundingClientRect();
@@ -58,11 +66,41 @@ const App: React.FC = () => {
   };
 
   const togglePause = () => {
-    setIsPaused((prev) => !prev); // Toggle pause state
+    setIsPaused((prev) => !prev);
   };
 
-  const handleRetry = () => {
-    startGame();
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserName(e.target.value);
+  };
+
+  const handleContinue = async () => {
+    if (!userName.trim()) return;
+
+    const data = {
+      name: userName,
+      time: timer,
+      stars: stars,
+    };
+
+    const response = await fetch("http://xxxxxxxxx/register.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const responseData = await response.json();
+
+    const sortedRanking = responseData.sort((a: Ranking, b: Ranking) => {
+      const starsA = Number(a.stars);
+      const starsB = Number(b.stars);
+      const timeA = Number(a.time);
+      const timeB = Number(b.time);
+
+      return starsB - starsA || timeB - timeA;
+    });
+    setRanking(sortedRanking);
   };
 
   useEffect(() => {
@@ -75,14 +113,12 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGameStarted, isGameOver, isPaused]);
 
-  // Handle spawn and movement intervals
   useEffect(() => {
     let spawnInterval: number;
     let moveInterval: number;
 
     if (isGameStarted && !isGameOver) {
       if (!isPaused) {
-        // Spawn objects
         spawnInterval = setInterval(() => {
           const containerHeight = gameContainerRef.current?.clientHeight || 768;
           const containerWidth = gameContainerRef.current?.clientWidth || 1024;
@@ -117,7 +153,6 @@ const App: React.FC = () => {
           setGameObjects((prev) => [...prev, newObject]);
         }, 1000);
 
-        // Move objects
         moveInterval = setInterval(() => {
           setGameObjects((prev) =>
             prev
@@ -138,7 +173,6 @@ const App: React.FC = () => {
     }
   }, [isGameStarted, isGameOver, isPaused]);
 
-  // Handle collisions
   useEffect(() => {
     if (isGameStarted && !isGameOver && !isPaused) {
       const collisionInterval = setInterval(() => {
@@ -183,7 +217,6 @@ const App: React.FC = () => {
     }
   }, [isGameStarted, isGameOver, gameObjects, isPaused]);
 
-  // Handle timer and fuel depletion
   useEffect(() => {
     if (isGameStarted && !isGameOver && !isPaused) {
       const timerInterval = setInterval(() => {
@@ -247,9 +280,29 @@ const App: React.FC = () => {
       {isGameOver && (
         <div id="game-over">
           <p>Game Over! Final Score: {stars}</p>
-          <button onClick={handleRetry} id="retry-button">
-            Retry
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={userName}
+            onChange={handleNameChange}
+          />
+          <button onClick={handleContinue} disabled={!userName}>
+            Continue
           </button>
+        </div>
+      )}
+
+      {ranking.length > 0 && (
+        <div id="ranking">
+          <h3>Ranking</h3>
+          <ul>
+            {ranking.map((entry, index) => (
+              <li key={index}>
+                {entry.name} - {entry.stars} Stars - {entry.time}s
+              </li>
+            ))}
+          </ul>
+          <button onClick={startGame}>Start Game</button>
         </div>
       )}
     </div>
