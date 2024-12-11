@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getRandomNumber } from "./helpers/getRandomNumber";
 
 type GameObjectType = "parachute" | "star" | "cloud" | "bird";
 
@@ -29,7 +30,7 @@ const App: React.FC = () => {
   const startGame = () => {
     setIsGameStarted(true);
     setTimer(0);
-    setFuel(100);
+    setFuel(10);
     setStars(0);
     setGameObjects([]);
     setAircraftPosition({ top: 500, left: 512 });
@@ -52,6 +53,10 @@ const App: React.FC = () => {
     } else if (e.key === "ArrowRight" && left + 50 < container.width) {
       setAircraftPosition((prev) => ({ ...prev, left: prev.left + step }));
     }
+  };
+
+  const handleRetry = () => {
+    startGame();
   };
 
   useEffect(() => {
@@ -77,21 +82,23 @@ const App: React.FC = () => {
         ];
         const spawnType =
           spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
+        console.log("spawnType", spawnType);
 
         const verticalPositions = {
-          cloud: [50, 150, 250],
-          bird: [100, 200, 300],
+          // Generate random y position for clouds and birds across the entire screen
+          cloud: getRandomNumber(0, containerHeight - 60), // Cloud's height is 60
+          bird: getRandomNumber(0, containerHeight - 40), // Bird's height is 40
         };
 
         const newObject: GameObject = {
           id: Date.now(),
-          x: containerWidth,
+          x: containerWidth + 50, // Ensure the object starts from off-screen (right side)
           y:
             spawnType === "cloud" || spawnType === "bird"
-              ? verticalPositions[spawnType][Math.floor(Math.random() * 3)]
+              ? verticalPositions[spawnType] // Random vertical position across the entire screen
               : spawnType === "parachute"
-              ? -50
-              : Math.random() * (containerHeight / 2),
+              ? -50 // Start above the screen for parachutes
+              : Math.random() * (containerHeight / 2), // Random fall for stars
           type: spawnType,
           width: spawnType === "cloud" ? 100 : 30,
           height: spawnType === "cloud" ? 60 : 30,
@@ -101,14 +108,15 @@ const App: React.FC = () => {
       }, 1000);
 
       const moveInterval = setInterval(() => {
-        setGameObjects((prev) =>
-          prev
-            .map((obj) => ({
-              ...obj,
-              x: obj.x - 5,
-              y: ["parachute", "star"].includes(obj.type) ? obj.y + 5 : obj.y,
-            }))
-            .filter((obj) => obj.x > -50 && obj.y < 768)
+        setGameObjects(
+          (prev) =>
+            prev
+              .map((obj) => ({
+                ...obj,
+                x: obj.x - 5, // Move left
+                y: ["parachute", "star"].includes(obj.type) ? obj.y + 5 : obj.y, // Add gravity effect to some objects
+              }))
+              .filter((obj) => obj.x > -50 && obj.y < 768) // Remove off-screen objects
         );
       }, 50);
 
@@ -138,7 +146,6 @@ const App: React.FC = () => {
                 aircraft.left + aircraft.width > objRect.left &&
                 aircraft.top < objRect.top + objRect.height &&
                 aircraft.top + aircraft.height > objRect.top;
-              console.log("colliding", colliding);
 
               if (colliding) {
                 switch (obj.type) {
@@ -180,8 +187,11 @@ const App: React.FC = () => {
   return (
     <div id="game-container" ref={gameContainerRef}>
       {!isGameStarted && !isGameOver && (
-        <button onClick={startGame}>Start Game</button>
+        <button onClick={startGame} className="start-game">
+          Start Game
+        </button>
       )}
+
       {isGameStarted && !isGameOver && (
         <>
           <div id="hud">
@@ -211,13 +221,21 @@ const App: React.FC = () => {
                 left: `${obj.x}px`,
                 width: `${obj.width}px`,
                 height: `${obj.height}px`,
-                borderRadius: obj.type === "star" ? "50%" : "0",
+                // borderRadius: obj.type === "star" ? "50%" : "0",
               }}
             />
           ))}
         </>
       )}
-      {isGameOver && <div>Game Over! Score: {stars}</div>}
+
+      {isGameOver && (
+        <div id="game-over">
+          <p>Game Over! Final Score: {stars}</p>
+          <button onClick={handleRetry} id="retry-button">
+            Retry
+          </button>
+        </div>
+      )}
     </div>
   );
 };
