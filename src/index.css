@@ -249,3 +249,91 @@ button:disabled {
   z-index: 10;
   transition: background-color 0.3s ease;
 }
+
+#game-over {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid #ff4747;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s;
+}
+
+#game-over p {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4747; /* Game Over Color */
+}
+
+#game-over input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 10px 0;
+  width: 80%;
+}
+
+#game-over button {
+  padding: 10px 20px;
+  background-color: #ff4747;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#game-over button:hover {
+  background-color: #e03e3e; /* Darker shade on hover */
+}
+
+#game-over button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Ranking Section */
+#ranking {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid #47ff69;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#ranking h3 {
+  font-size: 24px;
+  color: #2b5433; /* Ranking Color */
+}
+
+#ranking ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+#ranking li {
+  padding: 10px;
+  font-size: 18px;
+  border-bottom: 1px solid #ccc;
+}
+
+#ranking li:last-child {
+  border-bottom: none; /* Remove border from last item */
+}
+
+#ranking button {
+  padding: 10px 20px;
+  background-color: #050a06;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#ranking button:hover {
+  background-color: #3ec95b; /* Darker shade on hover */
+}

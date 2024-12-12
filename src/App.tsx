@@ -18,6 +18,7 @@ interface Ranking {
   time: string;
   stars: number;
 }
+
 const App: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -29,9 +30,10 @@ const App: React.FC = () => {
     left: 512,
   });
   const [isGameOver, setIsGameOver] = useState(false);
-  const [isPaused, setIsPaused] = useState(false); // Track paused state
+  const [isPaused, setIsPaused] = useState(false);
   const [userName, setUserName] = useState("");
   const [ranking, setRanking] = useState<Ranking[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const aircraftRef = useRef<HTMLDivElement>(null);
@@ -44,7 +46,8 @@ const App: React.FC = () => {
     setGameObjects([]);
     setAircraftPosition({ top: 500, left: 512 });
     setIsGameOver(false);
-    setIsPaused(false); // Ensure game is not paused when starting
+    setIsPaused(false);
+    setIsSubmitted(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,7 +85,9 @@ const App: React.FC = () => {
       stars: stars,
     };
 
-    const response = await fetch("http://xxxxxxxxx/register.php", {
+    const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+    const response = await fetch(`${BASE_URL}/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -101,6 +106,7 @@ const App: React.FC = () => {
       return starsB - starsA || timeB - timeA;
     });
     setRanking(sortedRanking);
+    setIsSubmitted(true);
   };
 
   useEffect(() => {
@@ -277,7 +283,7 @@ const App: React.FC = () => {
         </>
       )}
 
-      {isGameOver && (
+      {isGameOver && !isSubmitted && (
         <div id="game-over">
           <p>Game Over! Final Score: {stars}</p>
           <input
@@ -292,7 +298,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {ranking.length > 0 && (
+      {isSubmitted && (
         <div id="ranking">
           <h3>Ranking</h3>
           <ul>
